@@ -2,7 +2,7 @@ package exchange
 
 import (
 	"github.com/satimoto/go-ferp/ferprpc"
-	"github.com/satimoto/go-ferp/internal/rate"
+	"github.com/satimoto/go-ferp/pkg/rate"
 )
 
 func NewSubscribeRatesResponse(currency string, currencyRate rate.CurrencyRate) *ferprpc.SubscribeRatesResponse {

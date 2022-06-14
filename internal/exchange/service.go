@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/satimoto/go-ferp/internal/exchange/kraken"
-	"github.com/satimoto/go-ferp/internal/rate"
 	"github.com/satimoto/go-ferp/internal/rpc"
+	"github.com/satimoto/go-ferp/pkg/rate"
 )
 
 type RateHandler func(currency string, currencyRate rate.CurrencyRate)
