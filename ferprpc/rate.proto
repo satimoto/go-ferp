@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package session;
+
+option go_package = "github.com/satimoto/go-ferp/ferprpc";
+
+service RateService {
+  rpc SubscribeRates(SubscribeRatesRequest)
+      returns (stream SubscribeRatesResponse);
+};
+
+message SubscribeRatesRequest { string currency = 1; };
+
+message SubscribeRatesResponse {
+  string currency = 1;
+  int64 rate = 2;
+  int64 rate_msat = 3;
+  ConversionRate conversion_rate = 4;
+  int64 last_updated = 5;
+};
+
+message ConversionRate {
+  string currency = 1;
+  float rate = 2;
+  int64 last_updated = 3;
+}
