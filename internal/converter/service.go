@@ -9,8 +9,8 @@ import (
 
 	"github.com/satimoto/go-ferp/internal/converter/currencyconverter"
 	"github.com/satimoto/go-ferp/internal/exchange"
-	"github.com/satimoto/go-ferp/internal/rate"
 	"github.com/satimoto/go-ferp/internal/rpc"
+	"github.com/satimoto/go-ferp/pkg/rate"
 )
 
 type Converter interface {

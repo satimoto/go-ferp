@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/satimoto/go-datastore/pkg/util"
-	"github.com/satimoto/go-ferp/internal/rate"
+	"github.com/satimoto/go-ferp/pkg/rate"
 )
 
 const (
