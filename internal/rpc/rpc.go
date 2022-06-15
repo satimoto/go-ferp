@@ -10,6 +10,7 @@ import (
 
 	"github.com/satimoto/go-datastore/pkg/util"
 	"github.com/satimoto/go-ferp/ferprpc"
+	"github.com/satimoto/go-ferp/internal/converter"
 	"github.com/satimoto/go-ferp/internal/rpc/rate"
 	"google.golang.org/grpc"
 )
@@ -24,28 +25,19 @@ type RpcService struct {
 	RpcRateResolver *rate.RpcRateResolver
 }
 
-func NewRpc() Rpc {
+func NewRpc(converterService converter.Converter) Rpc {
 	return &RpcService{
 		server:          grpc.NewServer(),
-		RpcRateResolver: rate.NewResolver(),
+		RpcRateResolver: rate.NewResolver(converterService),
 	}
 }
 
-func (rs *RpcService) StartRpc(ctx context.Context, waitGroup *sync.WaitGroup) {
+func (rs *RpcService) StartRpc(shutdownCtx context.Context, waitGroup *sync.WaitGroup) {
 	log.Printf("Starting Rpc service")
 	waitGroup.Add(1)
 
 	go rs.listenAndServe()
-
-	go func() {
-		<-ctx.Done()
-		log.Printf("Shutting down Rpc service")
-
-		rs.shutdown()
-
-		log.Printf("Rpc service shut down")
-		waitGroup.Done()
-	}()
+	go rs.waitForShutdown(shutdownCtx, waitGroup)
 }
 
 func (rs *RpcService) GetRateService() *rate.RpcRateResolver {
@@ -69,6 +61,13 @@ func (rs *RpcService) listenAndServe() {
 	}
 }
 
-func (rs *RpcService) shutdown() {
+func (rs *RpcService) waitForShutdown(shutdownCtx context.Context, waitGroup *sync.WaitGroup) {
+	<-shutdownCtx.Done()
+	log.Printf("Shutting down Rpc service")
+
+	rs.RpcRateResolver.Shutdown()
 	rs.server.GracefulStop()
+
+	log.Printf("Rpc service shut down")
+	waitGroup.Done()
 }

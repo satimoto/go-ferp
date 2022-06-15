@@ -75,7 +75,7 @@ func (e *KrakenExchange) UpdateRates() (rate.LatestCurrencyRates, error) {
 	}
 
 	for pair, value := range tickerResponse.Data {
-		currency := getCurrency(pair)
+		currency := pair[len(pair)-3:]
 		price, err := strconv.ParseFloat(value.Last[0], 64)
 
 		if err != nil {
@@ -85,6 +85,7 @@ func (e *KrakenExchange) UpdateRates() (rate.LatestCurrencyRates, error) {
 		}
 
 		currencyRate := rate.CurrencyRate{
+			Currency:    currency,
 			Rate:        int64(100_000_000 / price),
 			RateMsat:    int64(100_000_000_000 / price),
 			LastUpdated: time.Now(),
@@ -107,8 +108,4 @@ func (e *KrakenExchange) GetRate(currency string) (*rate.CurrencyRate, error) {
 
 func (e *KrakenExchange) GetRates() rate.LatestCurrencyRates {
 	return e.currencyRates
-}
-
-func getCurrency(pair string) string {
-	return string(pair[len(pair)-3:])
 }

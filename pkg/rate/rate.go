@@ -12,6 +12,7 @@ type ConversionRate struct {
 type LatestConversionRates map[string]ConversionRate
 
 type CurrencyRate struct {
+	Currency    string
 	Rate        int64
 	RateMsat    int64
 	LastUpdated time.Time
