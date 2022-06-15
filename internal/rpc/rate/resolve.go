@@ -1,16 +1,23 @@
 package rate
 
-import "github.com/satimoto/go-ferp/ferprpc"
+import (
+	"context"
 
-type RateStream struct {
-	Currency string
-	Stream   ferprpc.RateService_SubscribeRatesServer
-}
+	"github.com/satimoto/go-ferp/internal/converter"
+)
 
 type RpcRateResolver struct {
-	streams []*RateStream
+	ConverterService converter.Converter
+	Shutdown         context.CancelFunc
+	shutdownCtx      context.Context
 }
 
-func NewResolver() *RpcRateResolver {
-	return &RpcRateResolver{}
+func NewResolver(converterService converter.Converter) *RpcRateResolver {
+	shutdownCtx, shutdown := context.WithCancel(context.Background())
+
+	return &RpcRateResolver{
+		ConverterService: converterService,
+		Shutdown: shutdown,
+		shutdownCtx: shutdownCtx,
+	}
 }

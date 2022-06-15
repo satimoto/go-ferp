@@ -4,63 +4,86 @@ import (
 	"context"
 	"log"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/satimoto/go-ferp/internal/converter/currencyconverter"
 	"github.com/satimoto/go-ferp/internal/exchange"
-	"github.com/satimoto/go-ferp/internal/rpc"
 	"github.com/satimoto/go-ferp/pkg/rate"
 )
 
 type Converter interface {
 	Start(shutdownCtx context.Context, waitGroup *sync.WaitGroup)
+	SubscribeRates(cancelCtx context.Context) chan *rate.CurrencyRate
 }
 
 type ConverterService struct {
 	ExchangeService         exchange.Exchange
-	RpcService              rpc.Rpc
 	currencyConverterClient currencyconverter.CurrencyConverter
 	conversionRates         rate.LatestConversionRates
+	rateSubscriptions       map[string]chan *rate.CurrencyRate
 }
 
-func NewService(exchangeService exchange.Exchange, rpcService rpc.Rpc) Converter {
+func NewService(exchangeService exchange.Exchange) Converter {
 	return &ConverterService{
 		ExchangeService:         exchangeService,
-		RpcService:              rpcService,
 		currencyConverterClient: currencyconverter.NewConverter(os.Getenv("CURRENCY_CONVERTER_API_KEY")),
 		conversionRates:         make(rate.LatestConversionRates),
+		rateSubscriptions:       make(map[string]chan *rate.CurrencyRate),
 	}
 }
 
 func (s *ConverterService) Start(shutdownCtx context.Context, waitGroup *sync.WaitGroup) {
-	s.ExchangeService.AddRateHandler(s.handleRate)
-
+	go s.startSubscriptionListener(shutdownCtx)
 	go s.startUpdateLoop(shutdownCtx, waitGroup)
 }
 
-func (s *ConverterService) handleRate(currency string, currencyRate rate.CurrencyRate) {
-	rateService := s.RpcService.GetRateService()
+func (s *ConverterService) SubscribeRates(cancelCtx context.Context) chan *rate.CurrencyRate {
+	id := strconv.FormatInt(time.Now().UnixNano(), 10)
 
+	s.rateSubscriptions[id] = make(chan *rate.CurrencyRate)
+
+	go s.waitForSubscriptionCancellation(cancelCtx, id)
+
+	return s.rateSubscriptions[id]
+}
+
+func (s *ConverterService) handleCurrencyRate(currencyRate *rate.CurrencyRate) {
 	for _, conversionRate := range s.conversionRates {
-		if currency == conversionRate.FromCurrency {
-			convertedCurrencyRate := rate.CurrencyRate{
+		if currencyRate.Currency == conversionRate.FromCurrency {
+			convertedCurrencyRate := &rate.CurrencyRate{
+				Currency:    conversionRate.ToCurrency,
 				Rate:        int64(float32(currencyRate.Rate) * conversionRate.Rate),
 				RateMsat:    int64(float32(currencyRate.RateMsat) * conversionRate.Rate),
 				LastUpdated: currencyRate.LastUpdated,
 			}
 
 			log.Printf("%s: %v sats / %v millisats", conversionRate.ToCurrency, convertedCurrencyRate.Rate, convertedCurrencyRate.RateMsat)
-			rateService.UpdateRate(NewSubscribeRatesResponse(conversionRate.ToCurrency, convertedCurrencyRate, conversionRate))
+			s.updateRateSubscriptions(convertedCurrencyRate)
 		}
 	}
+}
+
+func (s *ConverterService) startSubscriptionListener(shutdownCtx context.Context) {
+	ratesChan := s.ExchangeService.SubscribeRates(shutdownCtx)
+
+updateLoop:
+	for {
+		select {
+		case currencyRate := <-ratesChan:
+			s.updateRateSubscriptions(currencyRate)
+			s.handleCurrencyRate(currencyRate)
+		case <-shutdownCtx.Done():
+			break updateLoop
+		}
+	}
+
 }
 
 func (s *ConverterService) startUpdateLoop(shutdownCtx context.Context, waitGroup *sync.WaitGroup) {
 	log.Printf("Starting Converter service")
 	waitGroup.Add(1)
-
-	time.Now().Minute()
 
 updateLoop:
 	for {
@@ -82,4 +105,16 @@ updateLoop:
 
 	log.Printf("Converter service shut down")
 	waitGroup.Done()
+}
+
+func (s *ConverterService) updateRateSubscriptions(currencyRate *rate.CurrencyRate) {
+	for _, rateSubscription := range s.rateSubscriptions {
+		rateSubscription <- currencyRate
+	}
+}
+
+func (s *ConverterService) waitForSubscriptionCancellation(cancelCtx context.Context, id string) {
+	<-cancelCtx.Done()
+	close(s.rateSubscriptions[id])
+	delete(s.rateSubscriptions, id)
 }

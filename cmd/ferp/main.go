@@ -20,19 +20,19 @@ func main() {
 	shutdownCtx, cancelFunc := context.WithCancel(context.Background())
 	waitGroup := &sync.WaitGroup{}
 
+	exchangeService := exchange.NewService()
+	exchangeService.Start(shutdownCtx, waitGroup)
+
+	converterService := converter.NewService(exchangeService)
+	converterService.Start(shutdownCtx, waitGroup)
+
 	restService := rest.NewRest()
 	restService.StartRest(shutdownCtx, waitGroup)
 
-	rpcService := rpc.NewRpc()
+	rpcService := rpc.NewRpc(converterService)
 	rpcService.StartRpc(shutdownCtx, waitGroup)
 
-	exchangeService := exchange.NewService(rpcService)
-	exchangeService.Start(shutdownCtx, waitGroup)
-
-	converterService := converter.NewService(exchangeService, rpcService)
-	converterService.Start(shutdownCtx, waitGroup)
-
-	sigtermChan := make(chan os.Signal)
+	sigtermChan := make(chan os.Signal, 1)
 	signal.Notify(sigtermChan, syscall.SIGINT, syscall.SIGTERM)
 
 	<-sigtermChan
