@@ -114,8 +114,6 @@ func (s *CurrencyConverterService) queryRates(pairs []string) ([]rate.Conversion
 				Rate:         value,
 				LastUpdated:  time.Now(),
 			})
-
-			log.Printf("1 %s = %v %s", fromCurrency, value, toCurrency)
 		}
 	}
 

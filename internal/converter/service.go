@@ -59,7 +59,6 @@ func (s *ConverterService) handleCurrencyRate(currencyRate *rate.CurrencyRate) {
 				LastUpdated: currencyRate.LastUpdated,
 			}
 
-			log.Printf("%s: %v sats / %v millisats", conversionRate.ToCurrency, convertedCurrencyRate.Rate, convertedCurrencyRate.RateMsat)
 			s.updateRateSubscriptions(convertedCurrencyRate)
 		}
 	}

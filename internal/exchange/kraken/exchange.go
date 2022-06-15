@@ -91,7 +91,6 @@ func (e *KrakenExchange) UpdateRates() (rate.LatestCurrencyRates, error) {
 			LastUpdated: time.Now(),
 		}
 
-		log.Printf("%s: %v sats / %v millisats", currency, currencyRate.Rate, currencyRate.RateMsat)
 		e.currencyRates[currency] = currencyRate
 	}
 
