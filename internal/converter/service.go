@@ -52,10 +52,11 @@ func (s *ConverterService) SubscribeRates(cancelCtx context.Context) chan *rate.
 func (s *ConverterService) handleCurrencyRate(currencyRate *rate.CurrencyRate) {
 	for _, conversionRate := range s.conversionRates {
 		if currencyRate.Currency == conversionRate.FromCurrency {
+			rateMsat := int64(float32(currencyRate.RateMsat) * conversionRate.Rate)
 			convertedCurrencyRate := &rate.CurrencyRate{
 				Currency:    conversionRate.ToCurrency,
-				Rate:        int64(float32(currencyRate.Rate) * conversionRate.Rate),
-				RateMsat:    int64(float32(currencyRate.RateMsat) * conversionRate.Rate),
+				Rate:        rateMsat / 1000,
+				RateMsat:    rateMsat,
 				LastUpdated: currencyRate.LastUpdated,
 			}
 
