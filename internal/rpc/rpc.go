@@ -47,11 +47,7 @@ func (rs *RpcService) GetRateService() *rate.RpcRateResolver {
 func (rs *RpcService) listenAndServe() {
 	rpcPort := os.Getenv("RPC_PORT")
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", rpcPort))
-
-	if err != nil {
-		util.LogOnError("FERP003", "Error creating network address", err)
-		log.Printf("FERP003: RpcPort=%v", rpcPort)
-	}
+	util.PanicOnError("FERP003", "Error creating network address", err)
 
 	ferprpc.RegisterRateServiceServer(rs.server, rs.RpcRateResolver)
 	err = rs.server.Serve(listener)
