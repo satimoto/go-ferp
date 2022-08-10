@@ -1,0 +1,47 @@
+[
+  {
+    "image": "${account_id}.dkr.ecr.${region}.amazonaws.com/${service_name}:${image_tag}",
+    "networkMode": "${task_network_mode}",
+    "name": "${service_name}",
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-group": "/ecs/${service_name}",
+        "awslogs-region": "${region}",
+        "awslogs-stream-prefix": "ecs"
+      }
+    },
+    "portMappings": [
+      {
+        "protocol": "tcp",
+        "containerPort": ${service_container_port}
+      },
+      {
+        "protocol": "tcp",
+        "containerPort": ${rpc_container_port}
+      }
+    ],
+    "dockerLabels": {
+      "PROMETHEUS_EXPORTER_PORT": "${env_rest_port}",
+      "PROMETHEUS_EXPORTER_JOB_NAME": "${service_name}"
+    },
+    "environment": [
+      {
+        "name": "CURRENCY_CONVERTER_API_KEY",
+        "value": "${env_currency_converter_api_key}"
+      },
+      {
+        "name": "REST_PORT",
+        "value": "${env_rest_port}"
+      },
+      {
+        "name": "RPC_PORT",
+        "value": "${env_rpc_port}"
+      },
+      {
+        "name": "SHUTDOWN_TIMEOUT",
+        "value": "${env_shutdown_timeout}"
+      }
+    ]
+  }
+]
