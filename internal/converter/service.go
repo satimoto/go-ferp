@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/satimoto/go-ferp/internal/converter/currencyconverter"
+	"github.com/satimoto/go-ferp/internal/converter/openexchangerate"
 	"github.com/satimoto/go-ferp/internal/exchange"
 	"github.com/satimoto/go-ferp/pkg/rate"
 )
@@ -21,6 +22,7 @@ type Converter interface {
 type ConverterService struct {
 	ExchangeService         exchange.Exchange
 	currencyConverterClient currencyconverter.CurrencyConverter
+	openExchangeRateClient  openexchangerate.OpenExchangeRate
 	conversionRates         rate.LatestConversionRates
 	rateSubscriptions       map[string]chan *rate.CurrencyRate
 }
@@ -29,6 +31,7 @@ func NewService(exchangeService exchange.Exchange) Converter {
 	return &ConverterService{
 		ExchangeService:         exchangeService,
 		currencyConverterClient: currencyconverter.NewConverter(os.Getenv("CURRENCY_CONVERTER_API_KEY")),
+		openExchangeRateClient:  openexchangerate.NewConverter(os.Getenv("OPEN_EXCHANGE_RATE_API_KEY")),
 		conversionRates:         make(rate.LatestConversionRates),
 		rateSubscriptions:       make(map[string]chan *rate.CurrencyRate),
 	}
@@ -88,6 +91,11 @@ func (s *ConverterService) startUpdateLoop(shutdownCtx context.Context, waitGrou
 updateLoop:
 	for {
 		currencyRates, err := s.currencyConverterClient.UpdateRates()
+
+		if err != nil {
+			log.Printf("Using OpenExchangeRate client")
+			currencyRates, err = s.openExchangeRateClient.UpdateRates()
+		}
 
 		if err == nil {
 			for currency, currencyRate := range currencyRates {

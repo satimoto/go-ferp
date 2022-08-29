@@ -31,6 +31,10 @@
         "value": "${env_currency_converter_api_key}"
       },
       {
+        "name": "OPEN_EXCHANGE_RATE_API_KEY",
+        "value": "${env_open_exchange_rate_api_key}"
+      },
+      {
         "name": "REST_PORT",
         "value": "${env_rest_port}"
       },
