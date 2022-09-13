@@ -34,6 +34,8 @@ subdomain_name = "ferp"
 
 env_currency_converter_api_key = "de5062430b8774b3b35d"
 
+env_open_exchange_rate_api_key = "d93e136c687c489794c4ae9f9db60ff1"
+
 env_rpc_port = 50000
 
 env_shutdown_timeout = 20

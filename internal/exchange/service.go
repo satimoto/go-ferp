@@ -2,11 +2,13 @@ package exchange
 
 import (
 	"context"
+	"errors"
 	"log"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/satimoto/go-ferp/internal/exchange/bitstamp"
 	"github.com/satimoto/go-ferp/internal/exchange/kraken"
 	"github.com/satimoto/go-ferp/pkg/rate"
 )
@@ -20,25 +22,29 @@ type Exchange interface {
 }
 
 type ExchangeService struct {
+	bitstampClient    bitstamp.Bitstamp
 	krakenClient      kraken.Kraken
+	currencyRates     rate.LatestCurrencyRates
 	rateSubscriptions map[string]chan *rate.CurrencyRate
 }
 
 func NewService() Exchange {
 	return &ExchangeService{
+		bitstampClient:    bitstamp.NewExchange(),
 		krakenClient:      kraken.NewExchange(),
+		currencyRates:     make(rate.LatestCurrencyRates),
 		rateSubscriptions: make(map[string]chan *rate.CurrencyRate),
 	}
 }
 
 func (s *ExchangeService) GetRate(currency string) (*rate.CurrencyRate, error) {
-	currencyRate, err := s.krakenClient.GetRate(currency)
+	currencyRate, ok := s.currencyRates[currency]
 
-	if err != nil {
-		return nil, err
+	if ok {
+		return &currencyRate, nil
 	}
 
-	return currencyRate, nil
+	return nil, errors.New("no currency rate available")
 }
 
 func (s *ExchangeService) Start(shutdownCtx context.Context, waitGroup *sync.WaitGroup) {
@@ -63,8 +69,14 @@ updateLoop:
 	for {
 		currencyRates, err := s.krakenClient.UpdateRates()
 
+		if err != nil {
+			log.Printf("Using Bitstamp client")
+			currencyRates, err = s.bitstampClient.UpdateRates()
+		}
+
 		if err == nil {
 			for _, currencyRate := range currencyRates {
+				s.currencyRates[currencyRate.Currency] = currencyRate
 				s.updateRateSubscriptions(currencyRate)
 			}
 		}
