@@ -59,11 +59,13 @@ func (s *CurrencyConverterService) UpdateRates() (rate.LatestConversionRates, er
 		endIndex := util.MinInt(len(s.pairs), startIndex+2)
 		conversionRates, err := s.queryRates(s.pairs[startIndex:endIndex])
 
-		if err == nil {
-			for _, conversionRate := range conversionRates {
-				latestConversionRates[conversionRate.ToCurrency] = conversionRate
-				s.conversionRates[conversionRate.ToCurrency] = conversionRate
-			}
+		if err != nil {
+			return nil, err
+		}
+
+		for _, conversionRate := range conversionRates {
+			latestConversionRates[conversionRate.ToCurrency] = conversionRate
+			s.conversionRates[conversionRate.ToCurrency] = conversionRate
 		}
 	}
 

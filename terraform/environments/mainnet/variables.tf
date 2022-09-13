@@ -70,6 +70,10 @@ variable "env_currency_converter_api_key" {
   description = "The environment variable to set the currency converter api key"
 }
 
+variable "env_open_exchange_rate_api_key" {
+  description = "The environment variable to set the open exchange rate api key"
+}
+
 variable "env_rpc_port" {
   description = "The environment variable to set the RPC port"
 }
