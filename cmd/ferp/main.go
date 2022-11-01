@@ -11,6 +11,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/satimoto/go-ferp/internal/converter"
 	"github.com/satimoto/go-ferp/internal/exchange"
+	"github.com/satimoto/go-ferp/internal/metric"
 	"github.com/satimoto/go-ferp/internal/rest"
 	"github.com/satimoto/go-ferp/internal/rpc"
 )
@@ -25,6 +26,9 @@ func main() {
 
 	converterService := converter.NewService(exchangeService)
 	converterService.Start(shutdownCtx, waitGroup)
+	
+	metricService := metric.NewMetric()
+	metricService.StartMetric(shutdownCtx, waitGroup)
 
 	restService := rest.NewRest()
 	restService.StartRest(shutdownCtx, waitGroup)

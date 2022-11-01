@@ -13,7 +13,6 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/satimoto/go-datastore/pkg/util"
 )
 
@@ -39,7 +38,6 @@ func (rs *RestService) Handler() *chi.Mux {
 	router.Use(chiprometheus.NewMiddleware("ferp"))
 
 	router.Mount("/health", rs.mountHealth())
-	router.Mount("/metrics", promhttp.Handler())
 
 	return router
 }
