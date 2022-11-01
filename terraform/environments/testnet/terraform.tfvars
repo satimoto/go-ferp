@@ -16,6 +16,8 @@ service_desired_count = 1
 
 service_container_port = 9002
 
+service_metric_port = 9102
+
 task_network_mode = "awsvpc"
 
 task_cpu = 256
