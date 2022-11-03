@@ -34,7 +34,7 @@ target_health_matcher = "200"
 
 subdomain_name = "ferp"
 
-env_currency_converter_api_key = "7dfbc34cfd758df6c18f"
+env_currency_converter_api_key = "bbbed79639df36d1e244"
 
 env_open_exchange_rate_api_key = "d93e136c687c489794c4ae9f9db60ff1"
 
