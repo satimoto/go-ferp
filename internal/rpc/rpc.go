@@ -11,6 +11,7 @@ import (
 	"github.com/satimoto/go-datastore/pkg/util"
 	"github.com/satimoto/go-ferp/ferprpc"
 	"github.com/satimoto/go-ferp/internal/converter"
+	metrics "github.com/satimoto/go-ferp/internal/metric"
 	"github.com/satimoto/go-ferp/internal/rpc/rate"
 	"google.golang.org/grpc"
 )
@@ -53,7 +54,7 @@ func (rs *RpcService) listenAndServe() {
 	err = rs.server.Serve(listener)
 
 	if err != nil {
-		util.LogOnError("FERP004", "Error in Rpc service", err)
+		metrics.RecordError("FERP004", "Error in Rpc service", err)
 	}
 }
 

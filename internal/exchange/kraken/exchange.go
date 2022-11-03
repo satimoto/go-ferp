@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/satimoto/go-datastore/pkg/util"
+	metrics "github.com/satimoto/go-ferp/internal/metric"
 	"github.com/satimoto/go-ferp/pkg/rate"
 )
 
@@ -53,7 +54,7 @@ func (e *KrakenExchange) UpdateRates() (rate.LatestCurrencyRates, error) {
 	request, err := http.NewRequest(http.MethodGet, requestUrl, nil)
 
 	if err != nil {
-		util.LogOnError("FERP007", "Error forming request", err)
+		metrics.RecordError("FERP007", "Error forming request", err)
 		log.Printf("FERP007: Url=%v", requestUrl)
 		return nil, errors.New("error forming request")
 	}
@@ -61,7 +62,7 @@ func (e *KrakenExchange) UpdateRates() (rate.LatestCurrencyRates, error) {
 	response, err := e.httpClient.Do(request)
 
 	if err != nil {
-		util.LogOnError("FERP008", "Error making request", err)
+		metrics.RecordError("FERP008", "Error making request", err)
 		util.LogHttpRequest("FERP008", requestUrl, request, false)
 		return nil, errors.New("error making request")
 	}
@@ -69,7 +70,7 @@ func (e *KrakenExchange) UpdateRates() (rate.LatestCurrencyRates, error) {
 	tickerResponse, err := UnmarshalTickerResponse(response.Body)
 
 	if err != nil {
-		util.LogOnError("FERP009", "Error unmarshalling response", err)
+		metrics.RecordError("FERP009", "Error unmarshalling response", err)
 		util.LogHttpResponse("FERP009", requestUrl, response, false)
 		return nil, errors.New("error unmarshalling response")
 	}
@@ -79,7 +80,7 @@ func (e *KrakenExchange) UpdateRates() (rate.LatestCurrencyRates, error) {
 		price, err := strconv.ParseFloat(value.Last[0], 64)
 
 		if err != nil {
-			util.LogOnError("FERP010", "Error parsing float", err)
+			metrics.RecordError("FERP010", "Error parsing float", err)
 			log.Printf("FERP010: Value=%v", value.Last[0])
 			continue
 		}

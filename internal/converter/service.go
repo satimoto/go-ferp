@@ -53,15 +53,30 @@ func (s *ConverterService) SubscribeRates(cancelCtx context.Context) chan *rate.
 }
 
 func (s *ConverterService) handleCurrencyRate(currencyRate *rate.CurrencyRate) {
+	convertedCurrencyRate := &rate.CurrencyRate{
+		Currency:    currencyRate.Currency,
+		Rate:        currencyRate.Rate,
+		RateMsat:    currencyRate.RateMsat,
+		LastUpdated: currencyRate.LastUpdated,
+	}
+
+	metricCurrencyRateSatoshis.WithLabelValues(convertedCurrencyRate.Currency).Set(float64(currencyRate.Rate))
+
+	s.updateRateSubscriptions(convertedCurrencyRate)
+
+	// Update conversion rates
 	for _, conversionRate := range s.conversionRates {
 		if currencyRate.Currency == conversionRate.FromCurrency {
 			rateMsat := int64(float32(currencyRate.RateMsat) * conversionRate.Rate)
+			rateSat := rateMsat / 1000
 			convertedCurrencyRate := &rate.CurrencyRate{
 				Currency:    conversionRate.ToCurrency,
-				Rate:        rateMsat / 1000,
+				Rate:        rateSat,
 				RateMsat:    rateMsat,
 				LastUpdated: currencyRate.LastUpdated,
 			}
+
+			metricCurrencyRateSatoshis.WithLabelValues(conversionRate.ToCurrency).Set(float64(rateSat))
 
 			s.updateRateSubscriptions(convertedCurrencyRate)
 		}
