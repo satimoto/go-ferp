@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/satimoto/go-datastore/pkg/util"
 	"github.com/satimoto/go-ferp/ferprpc"
+	metrics "github.com/satimoto/go-ferp/internal/metric"
 )
 
 func (r *RpcRateResolver) SubscribeRates(req *ferprpc.SubscribeRatesRequest, stream ferprpc.RateService_SubscribeRatesServer) error {
@@ -27,7 +27,7 @@ func (r *RpcRateResolver) SubscribeRates(req *ferprpc.SubscribeRatesRequest, str
 				err := stream.Send(subscribeRatesResponse)
 
 				if err != nil {
-					util.LogOnError("FERP006", "Error sending to stream", err)
+					metrics.RecordError("FERP006", "Error sending to stream", err)
 					return err
 				}
 			}

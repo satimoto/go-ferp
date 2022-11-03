@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/satimoto/go-datastore/pkg/util"
+	metrics "github.com/satimoto/go-ferp/internal/metric"
 	"github.com/satimoto/go-ferp/pkg/rate"
 )
 
@@ -35,7 +36,7 @@ func NewExchange() Bitstamp {
 	return &BitstampExchange{
 		httpClient:    http.DefaultClient,
 		currencyRates: make(rate.LatestCurrencyRates),
-		pairs: []string{"btceur", "btcgbp", "btcusd"},
+		pairs:         []string{"btceur", "btcgbp", "btcusd"},
 	}
 }
 
@@ -63,7 +64,7 @@ func (e *BitstampExchange) queryRates(pair string) (*rate.CurrencyRate, error) {
 	request, err := http.NewRequest(http.MethodGet, requestUrl, nil)
 
 	if err != nil {
-		util.LogOnError("FERP017", "Error forming request", err)
+		metrics.RecordError("FERP017", "Error forming request", err)
 		log.Printf("FERP017: Url=%v", requestUrl)
 		return nil, errors.New("error forming request")
 	}
@@ -71,7 +72,7 @@ func (e *BitstampExchange) queryRates(pair string) (*rate.CurrencyRate, error) {
 	response, err := e.httpClient.Do(request)
 
 	if err != nil {
-		util.LogOnError("FERP018", "Error making request", err)
+		metrics.RecordError("FERP018", "Error making request", err)
 		util.LogHttpRequest("FERP018", requestUrl, request, false)
 		return nil, errors.New("error making request")
 	}
@@ -79,15 +80,15 @@ func (e *BitstampExchange) queryRates(pair string) (*rate.CurrencyRate, error) {
 	tickerResponse, err := UnmarshalTickerResponse(response.Body)
 
 	if err != nil {
-		util.LogOnError("FERP019", "Error unmarshalling response", err)
+		metrics.RecordError("FERP019", "Error unmarshalling response", err)
 		util.LogHttpResponse("FERP019", requestUrl, response, false)
 		return nil, errors.New("error unmarshalling response")
 	}
 
 	price, err := strconv.ParseFloat(tickerResponse.Last, 64)
-	
+
 	if err != nil {
-		util.LogOnError("FERP020", "Error parsing float", err)
+		metrics.RecordError("FERP020", "Error parsing float", err)
 		log.Printf("FERP020: Value=%v", tickerResponse.Last)
 		return nil, errors.New("error parsing float")
 	}
