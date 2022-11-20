@@ -67,7 +67,7 @@ func (s *ConverterService) handleCurrencyRate(currencyRate *rate.CurrencyRate) {
 	// Update conversion rates
 	for _, conversionRate := range s.conversionRates {
 		if currencyRate.Currency == conversionRate.FromCurrency {
-			rateMsat := int64(float32(currencyRate.RateMsat) * conversionRate.Rate)
+			rateMsat := int64(float32(currencyRate.RateMsat) / conversionRate.Rate)
 			rateSat := rateMsat / 1000
 			convertedCurrencyRate := &rate.CurrencyRate{
 				Currency:    conversionRate.ToCurrency,
