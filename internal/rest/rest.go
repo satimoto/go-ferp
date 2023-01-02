@@ -13,8 +13,8 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/satimoto/go-datastore/pkg/util"
+	metrics "github.com/satimoto/go-ferp/internal/metric"
 )
 
 type Rest interface {
@@ -39,7 +39,6 @@ func (rs *RestService) Handler() *chi.Mux {
 	router.Use(chiprometheus.NewMiddleware("ferp"))
 
 	router.Mount("/health", rs.mountHealth())
-	router.Mount("/metrics", promhttp.Handler())
 
 	return router
 }
@@ -72,7 +71,7 @@ func (rs *RestService) listenAndServe() {
 	err := rs.Server.ListenAndServe()
 
 	if err != nil && err != http.ErrServerClosed {
-		util.LogOnError("FERP001", "Error in Rest service", err)
+		metrics.RecordError("FERP001", "Error in Rest service", err)
 	}
 }
 
@@ -84,6 +83,6 @@ func (rs *RestService) shutdown() {
 	err := rs.Server.Shutdown(ctx)
 
 	if err != nil {
-		util.LogOnError("FERP002", "Error shutting down Rest service", err)
+		metrics.RecordError("FERP002", "Error shutting down Rest service", err)
 	}
 }

@@ -24,6 +24,7 @@ type ConverterService struct {
 	currencyConverterClient currencyconverter.CurrencyConverter
 	openExchangeRateClient  openexchangerate.OpenExchangeRate
 	conversionRates         rate.LatestConversionRates
+	currencyRates           rate.LatestCurrencyRates
 	rateSubscriptions       map[string]chan *rate.CurrencyRate
 }
 
@@ -33,6 +34,7 @@ func NewService(exchangeService exchange.Exchange) Converter {
 		currencyConverterClient: currencyconverter.NewConverter(os.Getenv("CURRENCY_CONVERTER_API_KEY")),
 		openExchangeRateClient:  openexchangerate.NewConverter(os.Getenv("OPEN_EXCHANGE_RATE_API_KEY")),
 		conversionRates:         make(rate.LatestConversionRates),
+		currencyRates:           make(rate.LatestCurrencyRates),
 		rateSubscriptions:       make(map[string]chan *rate.CurrencyRate),
 	}
 }
@@ -47,24 +49,50 @@ func (s *ConverterService) SubscribeRates(cancelCtx context.Context) chan *rate.
 
 	s.rateSubscriptions[id] = make(chan *rate.CurrencyRate)
 
+	go s.sendInitialRates(s.rateSubscriptions[id])
 	go s.waitForSubscriptionCancellation(cancelCtx, id)
 
 	return s.rateSubscriptions[id]
 }
 
 func (s *ConverterService) handleCurrencyRate(currencyRate *rate.CurrencyRate) {
+	convertedCurrencyRate := &rate.CurrencyRate{
+		Currency:    currencyRate.Currency,
+		Rate:        currencyRate.Rate,
+		RateMsat:    currencyRate.RateMsat,
+		LastUpdated: currencyRate.LastUpdated,
+	}
+
+	metricCurrencyRateSatoshis.WithLabelValues(convertedCurrencyRate.Currency).Set(float64(currencyRate.Rate))
+
+	s.currencyRates[currencyRate.Currency] = *convertedCurrencyRate
+	s.updateRateSubscriptions(convertedCurrencyRate)
+
+	// Update conversion rates
 	for _, conversionRate := range s.conversionRates {
 		if currencyRate.Currency == conversionRate.FromCurrency {
-			rateMsat := int64(float32(currencyRate.RateMsat) * conversionRate.Rate)
+			rateMsat := int64(float32(currencyRate.RateMsat) / conversionRate.Rate)
+			rateSat := rateMsat / 1000
 			convertedCurrencyRate := &rate.CurrencyRate{
 				Currency:    conversionRate.ToCurrency,
-				Rate:        rateMsat / 1000,
+				Rate:        rateSat,
 				RateMsat:    rateMsat,
 				LastUpdated: currencyRate.LastUpdated,
 			}
 
+			metricCurrencyRateSatoshis.WithLabelValues(conversionRate.ToCurrency).Set(float64(rateSat))
+
+			s.currencyRates[conversionRate.ToCurrency] = *convertedCurrencyRate
 			s.updateRateSubscriptions(convertedCurrencyRate)
 		}
+	}
+}
+
+func (s *ConverterService) sendInitialRates(ratesChan chan *rate.CurrencyRate) {
+	<-time.After(100 * time.Millisecond)
+
+	for _, currencyRate := range s.currencyRates {
+		ratesChan <- &currencyRate
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	dbUtil "github.com/satimoto/go-datastore/pkg/util"
+	metrics "github.com/satimoto/go-ferp/internal/metric"
 	"github.com/satimoto/go-ferp/internal/util"
 	"github.com/satimoto/go-ferp/pkg/rate"
 )
@@ -85,7 +86,7 @@ func (s *CurrencyConverterService) queryRates(pairs []string) ([]rate.Conversion
 		request, err := http.NewRequest(http.MethodGet, requestUrl, nil)
 
 		if err != nil {
-			dbUtil.LogOnError("FERP011", "Error forming request", err)
+			metrics.RecordError("FERP011", "Error forming request", err)
 			log.Printf("FERP011: Url=%v", requestUrl)
 			return nil, errors.New("error forming request")
 		}
@@ -93,7 +94,7 @@ func (s *CurrencyConverterService) queryRates(pairs []string) ([]rate.Conversion
 		response, err := s.httpClient.Do(request)
 
 		if err != nil {
-			dbUtil.LogOnError("FERP012", "Error making request", err)
+			metrics.RecordError("FERP012", "Error making request", err)
 			dbUtil.LogHttpRequest("FERP012", requestUrl, request, false)
 			return nil, errors.New("error making request")
 		}
@@ -101,7 +102,7 @@ func (s *CurrencyConverterService) queryRates(pairs []string) ([]rate.Conversion
 		convertResponse, err := UnmarshalConvertResponse(response.Body)
 
 		if err != nil {
-			dbUtil.LogOnError("FERP013", "Error unmarshalling response", err)
+			metrics.RecordError("FERP013", "Error unmarshalling response", err)
 			dbUtil.LogHttpResponse("FERP013", requestUrl, response, false)
 			return nil, errors.New("error unmarshalling response")
 		}

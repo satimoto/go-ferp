@@ -97,10 +97,12 @@ module "service-ferp" {
     region                         = var.region
     service_name                   = var.service_name
     service_container_port         = var.service_container_port
+    service_metric_port            = var.service_metric_port
     rpc_container_port             = var.env_rpc_port
     task_network_mode              = var.task_network_mode
     env_currency_converter_api_key = var.env_currency_converter_api_key
     env_open_exchange_rate_api_key = var.env_open_exchange_rate_api_key
+    env_metric_port                = var.service_metric_port
     env_rest_port                  = var.service_container_port
     env_rpc_port                   = var.env_rpc_port
     env_shutdown_timeout           = var.env_shutdown_timeout
