@@ -121,14 +121,17 @@ updateLoop:
 		currencyRates, err := s.currencyConverterClient.UpdateRates()
 
 		if err != nil {
-			log.Printf("Using OpenExchangeRate client")
+			log.Printf("Trying OpenExchangeRate client")
 			currencyRates, err = s.openExchangeRateClient.UpdateRates()
 		}
 
-		if err == nil {
-			for currency, currencyRate := range currencyRates {
-				s.conversionRates[currency] = currencyRate
-			}
+		if err != nil {
+			log.Printf("Using backup rates")
+			currencyRates = s.backupRates()
+		}
+
+		for currency, currencyRate := range currencyRates {
+			s.conversionRates[currency] = currencyRate
 		}
 
 		select {
@@ -142,6 +145,47 @@ updateLoop:
 	log.Printf("Converter service shut down")
 	waitGroup.Done()
 }
+
+func (s *ConverterService) backupRates() rate.LatestConversionRates {
+	updatedAt := time.Now()
+	backupConversionRates := make(rate.LatestConversionRates)
+	backupConversionRates["ANG"] = s.backupRate("EUR", "ANG", 1.93, updatedAt)
+	backupConversionRates["BAM"] = s.backupRate("EUR", "BAM", 1.96, updatedAt)
+	backupConversionRates["BGN"] = s.backupRate("EUR", "BGN", 1.96, updatedAt)
+	backupConversionRates["CHF"] = s.backupRate("EUR", "CHF", 0.95, updatedAt)
+	backupConversionRates["CLP"] = s.backupRate("EUR", "CLP", 946.06, updatedAt)
+	backupConversionRates["CZK"] = s.backupRate("EUR", "CZK", 24.35, updatedAt)
+	backupConversionRates["DKK"] = s.backupRate("EUR", "DKK", 7.46, updatedAt)
+	backupConversionRates["HRK"] = s.backupRate("EUR", "HRK", 7.53, updatedAt)
+	backupConversionRates["HUF"] = s.backupRate("EUR", "HUF", 381.61, updatedAt)
+	backupConversionRates["ISK"] = s.backupRate("EUR", "ISK", 150.71, updatedAt)
+	backupConversionRates["KRW"] = s.backupRate("EUR", "KRW", 1419.87, updatedAt)
+	backupConversionRates["LVL"] = s.backupRate("EUR", "LVL", 0.70, updatedAt)
+	backupConversionRates["PLN"] = s.backupRate("EUR", "PLN", 4.33, updatedAt)
+	backupConversionRates["MAD"] = s.backupRate("EUR", "MAD", 10.94, updatedAt)
+	backupConversionRates["MKD"] = s.backupRate("EUR", "MKD", 61.53, updatedAt)
+	backupConversionRates["NOK"] = s.backupRate("EUR", "NOK", 11.79, updatedAt)
+	backupConversionRates["RON"] = s.backupRate("EUR", "RON", 4.97, updatedAt)
+	backupConversionRates["RSD"] = s.backupRate("EUR", "RSD", 117.17, updatedAt)
+	backupConversionRates["SEK"] = s.backupRate("EUR", "SEK", 11.28, updatedAt)
+	backupConversionRates["SGD"] = s.backupRate("EUR", "SGD", 1.45, updatedAt)
+	backupConversionRates["THB"] = s.backupRate("EUR", "THB", 38.40, updatedAt)
+	backupConversionRates["GBP"] = s.backupRate("EUR", "GBP", 0.86, updatedAt)
+	backupConversionRates["USD"] = s.backupRate("EUR", "USD", 10.08, updatedAt)
+
+	return backupConversionRates
+}
+
+func (s *ConverterService) backupRate(from, to string, value float32, updatedAt time.Time) rate.ConversionRate {
+	return rate.ConversionRate{
+		FromCurrency: from,
+		ToCurrency: to,
+		Rate: value,
+		LastUpdated: updatedAt,
+	}
+}
+
+
 
 func (s *ConverterService) updateRateSubscriptions(currencyRate *rate.CurrencyRate) {
 	for _, rateSubscription := range s.rateSubscriptions {
